@@ -1,0 +1,22 @@
+{
+  "name": "@scitex/rich-pdf",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "AGPL-3.0-only",
+  "exports": {
+    ".": {
+      "types": "./pdf-provider.d.ts",
+      "import": "./pdf-provider.js"
+    },
+    "./pdf-provider": {
+      "types": "./pdf-provider.d.ts",
+      "import": "./pdf-provider.js"
+    },
+    "./pdf-provider.css": "./pdf-provider.css"
+  },
+  "files": ["pdf-provider.js", "pdf-provider.d.ts", "pdf-provider.css"],
+  "peerDependencies": {
+    "@scitex/sdk": ">=0.3.25"
+  }
+}

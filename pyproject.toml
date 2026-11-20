@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "scitex-rich-pdf"
+version = "0.1.0"
+description = "Reusable SciTeX PDF viewer with region overlays and a synchronized feed"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "AGPL-3.0-only"
+license-files = ["LICENSE"]
+authors = [{name = "Yusuke Watanabe", email = "noreply@scitex.ai"}]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Python :: 3",
+    "Topic :: Multimedia :: Graphics :: Viewers",
+]
+
+[project.urls]
+Repository = "https://github.com/scitex-ai/scitex-rich-pdf"
+Issues = "https://github.com/scitex-ai/scitex-rich-pdf/issues"
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-cov>=5", "playwright>=1.51"]
+all = []
+
+[tool.setuptools.package-data]
+scitex_rich_pdf = ["frontend/*.js", "frontend/*.css", "frontend/*.ts", "frontend/package.json"]
+
+[tool.pytest.ini_options]
+markers = ["browser: requires the Playwright Chromium browser"]
