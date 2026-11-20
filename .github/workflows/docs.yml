@@ -1,0 +1,24 @@
+name: documentation
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  rtd-sphinx-build:
+    permissions:
+      contents: write
+      pull-requests: write
+    uses: scitex-ai/.github/.github/workflows/rtd-sphinx-build.yml@e6007ec2dbb842ec1f969a9844d7cea27d757620
+    with:
+      runs_on: '["ubuntu-latest"]'
+      required: true
+      fail_on_warning: true
+      python_version: '3.11'
+      bundle_dir: src/scitex_rich_pdf/_sphinx_html
