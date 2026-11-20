@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "scitex-rich-pdf"
-version = "0.1.0"
+version = "0.1.1"
 description = "Reusable SciTeX PDF viewer with region overlays and a synchronized feed"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -18,15 +18,31 @@ classifiers = [
 ]
 
 [project.urls]
+Homepage = "https://github.com/scitex-ai/scitex-rich-pdf"
+Documentation = "https://scitex-rich-pdf.readthedocs.io/"
 Repository = "https://github.com/scitex-ai/scitex-rich-pdf"
 Issues = "https://github.com/scitex-ai/scitex-rich-pdf/issues"
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "pytest-cov>=5", "playwright>=1.51"]
 all = []
+docs = ["myst-parser>=2,<6", "sphinx>=7,<9", "sphinx-rtd-theme>=2,<4"]
+
+[project.entry-points."scitex_dev.docs"]
+scitex-rich-pdf = "scitex_rich_pdf"
+
+[project.entry-points."scitex_dev.skills"]
+scitex-rich-pdf = "scitex_rich_pdf"
 
 [tool.setuptools.package-data]
-scitex_rich_pdf = ["frontend/*.js", "frontend/*.css", "frontend/*.ts", "frontend/package.json"]
+scitex_rich_pdf = [
+    "frontend/*.js",
+    "frontend/*.css",
+    "frontend/*.ts",
+    "frontend/package.json",
+    "_skills/scitex-rich-pdf/*.md",
+    "_sphinx_html/**/*",
+]
 
 [tool.pytest.ini_options]
 markers = ["browser: requires the Playwright Chromium browser"]

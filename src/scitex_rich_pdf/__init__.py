@@ -1,11 +1,7 @@
-"""Locate the assets of the framework-neutral Rich PDF component."""
+"""SciTeX Rich PDF browser assets."""
 
-from pathlib import Path
+from __future__ import annotations
 
-
-def get_frontend_package_dir() -> Path:
-    """Return the installed directory usable as an npm file dependency."""
-    return Path(__file__).resolve().parent / "frontend"
-
+from ._frontend import get_frontend_package_dir
 
 __all__ = ["get_frontend_package_dir"]
