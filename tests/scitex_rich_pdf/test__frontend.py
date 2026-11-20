@@ -1,4 +1,4 @@
-from importlib.metadata import version
+from importlib.metadata import distribution, version
 import os
 from json import loads
 
@@ -8,17 +8,20 @@ from playwright.sync_api import expect, sync_playwright
 from scitex_rich_pdf import get_frontend_package_dir
 
 
-def test_frontend_exports():
+def test_frontend_exports_match_distribution():
+    # Arrange
     package_dir = get_frontend_package_dir()
+    # Act
     manifest = loads((package_dir / "package.json").read_text())
-    assert manifest["version"] == version("scitex-rich-pdf")
-    for filename in manifest["files"]:
-        assert (package_dir / filename).stat().st_size > 0
+    missing_assets = [name for name in manifest["files"] if not (package_dir / name).is_file()]
+    # Assert
+    assert (manifest["version"], missing_assets) == (version("scitex-rich-pdf"), [])
 
 
 @pytest.mark.browser
 @pytest.mark.skipif(not os.environ.get("RICH_PDF_BROWSER"), reason="requires Chromium")
 def test_viewer_feed_lifecycle():
+    # Arrange
     script = (get_frontend_package_dir() / "pdf-provider.js").read_text()
     html = '<main><div id="pdf"></div><aside id="feed"></aside></main>'
     with sync_playwright() as playwright:
@@ -69,10 +72,12 @@ def test_viewer_feed_lifecycle():
               await viewer.load('revision-a');
             }"""
         )
+        # Act
         overlay = page.get_by_role("button", name="Region revision-a")
         entry = page.get_by_role("button", name="Entry revision-a")
         overlay.focus()
         overlay.click()
+        # Assert
         expect(entry).to_have_attribute("aria-current", "true")
         entry.click()
         expect(overlay).to_have_attribute("aria-current", "true")
@@ -88,3 +93,26 @@ def test_viewer_feed_lifecycle():
         page.evaluate("viewer.destroy()")
         expect(page.locator("#feed > *")).to_have_count(0)
         browser.close()
+
+
+def test_scitex_provider_discovery_metadata():
+    # Arrange
+    dist = distribution("scitex-rich-pdf")
+    skill = get_frontend_package_dir().parent / "_skills" / "scitex-rich-pdf" / "SKILL.md"
+    # Act
+    declarations = {(entry.group, entry.name, entry.value) for entry in dist.entry_points}
+    expected = {
+        (group, "scitex-rich-pdf", "scitex_rich_pdf")
+        for group in ("scitex_dev.docs", "scitex_dev.skills")
+    }
+    # Assert
+    assert (expected <= declarations, "name: scitex-rich-pdf" in skill.read_text()) == (True, True)
+
+
+def test_installed_sphinx_includes_reader_docs():
+    # Arrange
+    bundle = get_frontend_package_dir().parent / "_sphinx_html"
+    # Act
+    page = (bundle / "index.html").read_text(encoding="utf-8")
+    # Assert
+    assert "SciTeX Rich PDF" in page
