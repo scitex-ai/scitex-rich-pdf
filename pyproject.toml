@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "scitex-rich-pdf"
-version = "0.1.1"
+version = "0.1.2"
 description = "Reusable SciTeX PDF viewer with region overlays and a synchronized feed"
 readme = "README.md"
 requires-python = ">=3.10"
