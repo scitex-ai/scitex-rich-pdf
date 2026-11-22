@@ -135,3 +135,11 @@ originated in [SciTeX Live Paper](https://github.com/scitex-ai/scitex-live-paper
 <p align="center">
   <a href="https://scitex.ai"><img src="docs/scitex-icon-navy-inverted.png" alt="SciTeX" width="40"></a>
 </p>
+
+### Pages and Bookmarks
+
+Use `createPdfNavigation({container, toggle, pdfjs})` with an empty navigation
+mount and a toggle button. Pass the returned `runtime` to the SDK viewer and
+forward its page-render callback to `pageRendered(page, surface)`. Call
+`finishRender()` after the initial layout and `destroy()` on teardown. The pane
+uses native PDF bookmarks and lazily renders page thumbnails with that same PDF.js document.

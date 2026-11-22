@@ -183,3 +183,67 @@ def test_preview_supports_highlighter_touch_and_figure_regions():
         expect(page.get_by_role("dialog")).to_have_count(0)
         assert page.evaluate("window.cancelled") is True
         browser.close()
+
+
+@pytest.mark.browser
+@pytest.mark.skipif(not os.environ.get("RICH_PDF_BROWSER"), reason="requires Chromium")
+def test_navigation_is_ready_before_pages_finish_rendering():
+    # Arrange
+    script = (get_frontend_package_dir() / "pdf-provider.js").read_text()
+    html = (
+        '<button id="toggle" aria-controls="navigation">Pages &amp; bookmarks</button>'
+        '<nav id="navigation" hidden></nav>'
+        '<div id="paper" style="height:80px;overflow:auto"></div>'
+    )
+    with sync_playwright() as playwright, playwright.chromium.launch() as browser:
+        page = browser.new_page()
+        page.route("https://rich-pdf.test/", lambda route: route.fulfill(body=html, content_type="text/html"))
+        page.route(
+            "https://rich-pdf.test/pdf-provider.js",
+            lambda route: route.fulfill(body=script, content_type="text/javascript"),
+        )
+        page.goto("https://rich-pdf.test/")
+        page.evaluate("""async () => {
+          const {createPdfNavigation} = await import("/pdf-provider.js");
+          const pdf = {
+            numPages: 2,
+            async getOutline() { return [{title: "References", dest: [1, {name: "Fit"}]}]; },
+            async getPage() {
+              return {
+                getViewport: ({scale}) => ({width: 200 * scale, height: 300 * scale}),
+                render: ({canvasContext}) => {
+                  canvasContext.fillRect(0, 0, 5, 5);
+                  return {promise: Promise.resolve()};
+                },
+              };
+            },
+          };
+          window.pdfNavigation = createPdfNavigation({
+            container: document.querySelector("#navigation"),
+            toggle: document.querySelector("#toggle"),
+            pdfjs: {getDocument: () => ({promise: Promise.resolve(pdf)})},
+          });
+          pdfNavigation.runtime.getDocument();
+        }""")
+        # Act
+        page.get_by_role("button", name="Pages & bookmarks").click()
+        page.get_by_role("button", name="Page 2", exact=True).wait_for()
+        page.wait_for_function("""() => document.querySelector("canvas")
+          ?.getContext("2d").getImageData(0, 0, 1, 1).data[3] === 255""")
+        page.get_by_role("button", name="Bookmarks", exact=True).click()
+        page.get_by_role("button", name="References", exact=True).click()
+        scroll = page.evaluate("""() => {
+          const viewer = document.querySelector("#paper");
+          for (const page of [1, 2]) {
+            const element = document.createElement("div");
+            element.style.height = "200px";
+            viewer.append(element);
+            pdfNavigation.pageRendered(page, {element});
+          }
+          pdfNavigation.finishRender();
+          return viewer.scrollTop;
+        }""")
+        page.get_by_role("button", name="Pages & bookmarks").click()
+        closed = page.locator("#navigation").is_hidden()
+    # Assert
+    assert (scroll, closed) == (188, True)

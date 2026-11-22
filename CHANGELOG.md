@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.1.3]
+
+- Add a shared Pages and Bookmarks pane with lazy PDF page thumbnails and native outline navigation.
+- Populate navigation from the loaded PDF document while the main pages render.
+
 ## [0.1.2]
 
 - Add translucent text highlights and edge marks for figure regions.
