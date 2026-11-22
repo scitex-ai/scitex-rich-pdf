@@ -170,7 +170,11 @@ def test_preview_supports_highlighter_touch_and_figure_regions():
             "highlight", "region"
         )
         figure.tap()
-        expect(page.get_by_role("dialog", name="Figure")).to_have_text("×Graph of Figure")
+        dialog = page.get_by_role("dialog", name="Figure")
+        expect(dialog).to_have_text("×Graph of Figure")
+        page.evaluate("viewer.setComments([])")
+        expect(dialog).to_be_visible()
+        assert page.evaluate("window.cancelled === undefined")
         page.get_by_role("button", name="Close evidence preview").tap()
         expect(figure).to_be_focused()
         value.tap()
