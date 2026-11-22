@@ -76,6 +76,14 @@ The optional `renderEntry` callback returns DOM content for details and host
 actions. The host can handle `overlay-preview` events from hover or keyboard
 focus, as well as `overlay-select` and `feed-select` events.
 
+Choose `appearance: "highlight"` for a translucent text or value mark and
+`appearance: "region"` for an edge affordance on a figure. The optional
+`ports.preview.render(container, overlay, signal)` callback supplies content
+for the overlay's dialog. The component opens it on hover or keyboard focus.
+Activation pins it and moves focus into the dialog. Escape dismisses it and
+returns focus to the mark. Use the abort signal to cancel pending work when the
+dialog closes. Hosts still supply and authorize any evidence content.
+
 The component also accepts comment, pen-input, and mutation-policy ports.
 See the bundled TypeScript declarations for the complete interface. Perform
 authorization and persistence in the host. Call `destroy` to remove component

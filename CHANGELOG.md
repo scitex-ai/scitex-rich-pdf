@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.1.2]
+
+- Add translucent text highlights and edge marks for figure regions.
+- Add a host-supplied evidence preview that works with hover, keyboard, and touch.
+
 ## [0.1.1]
 
 - Register the package's documentation and skill as SciTeX Dev providers.
