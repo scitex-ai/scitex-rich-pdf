@@ -84,6 +84,10 @@ Activation pins it and moves focus into the dialog. Escape dismisses it and
 returns focus to the mark. Use the abort signal to cancel pending work when the
 dialog closes. Hosts still supply and authorize any evidence content.
 
+Hosts can mount `renderPdfDiscussion` in their own sidebar or tab. Pass the
+comment loader and, when posting is allowed, a post callback. Hosts own
+permissions, persistence, and the choice of page, region, or overlay anchor.
+
 The component also accepts comment, pen-input, and mutation-policy ports.
 See the bundled TypeScript declarations for the complete interface. Perform
 authorization and persistence in the host. Call `destroy` to remove component

@@ -1,4 +1,7 @@
 # Changelog
+## [0.1.4]
+
+- Provide a shared comment list and composer for PDF pages, regions, and overlays.
 
 ## [0.1.3]
 
