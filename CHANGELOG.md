@@ -1,4 +1,8 @@
 # Changelog
+## [0.1.4]
+
+- Provide a shared comment list and composer for PDF pages, regions, and overlays.
+- Expose an optional PDF context menu with configurable reading actions.
 
 ## [0.1.3]
 
