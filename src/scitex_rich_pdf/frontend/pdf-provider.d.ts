@@ -38,6 +38,7 @@ export interface RichPdfApi {
   refresh(): Promise<void>;
   setOverlays(overlays: PdfOverlay[]): void;
   setComments(comments: PdfComment[]): void;
+  setFeedFilter(filter: ((entry: PdfFeedEntry) => boolean) | null): void;
   selectTarget(target: PdfTarget, anchor?: HTMLElement, overlay?: PdfOverlay | null): void;
   createComment(target: PdfTarget, body: string): Promise<PdfComment>;
   destroy(): void;
@@ -52,6 +53,7 @@ export interface PdfNavigationOptions {
   container: HTMLElement;
   toggle: HTMLButtonElement;
   pdfjs: PdfRuntime;
+  initiallyOpen?: boolean;
   onDocument?(document: LoadedPdf): void;
 }
 

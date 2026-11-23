@@ -136,9 +136,13 @@ export function createRichPdfViewer(options) {
     preview?.close();
     const overlay = overlays.find((item) => item.id === entry.overlayId);
     selectOverlay(overlay?.id);
-    const anchor = [...(layers.get(overlay?.page)?.children ?? [])]
-      .find((element) => element.dataset.overlayId === entry.overlayId);
-    anchor?.scrollIntoView({ block: "nearest", inline: "nearest" });
+    if (overlay && ports.feed?.navigate) {
+      ports.feed.navigate(overlay);
+    } else {
+      const anchor = [...(layers.get(overlay?.page)?.children ?? [])]
+        .find((element) => element.dataset.overlayId === entry.overlayId);
+      anchor?.scrollIntoView({ block: "nearest", inline: "nearest" });
+    }
     emit({ type: "feed-select", entry, overlay: overlay ?? null });
   }
 
@@ -244,7 +248,8 @@ export function createRichPdfViewer(options) {
     for (const layer of layers.values()) layer.remove();
     layers.clear(); pages.clear(); renderer.destroy();
   }
-  return { renderer, load, refresh, setOverlays, setComments, selectTarget, createComment, destroy };
+  return { renderer, load, refresh, setOverlays, setComments,
+    setFeedFilter: (filter) => feed?.setFilter(filter), selectOverlay, selectTarget, createComment, destroy };
 }
 
 function createOverlayPreview(container, port) {
@@ -379,12 +384,17 @@ function createFeed(container, choose, renderEntry) {
   container.append(list);
   let rows = [];
   let selected = null;
+  let filter = null;
+
+  function updateVisibility() {
+    for (const row of rows) row.element.hidden = filter ? !filter(row.entry) : false;
+  }
 
   function select(row, scroll = false) {
     selected?.button.removeAttribute("aria-current");
     selected = row ?? null;
     selected?.button.setAttribute("aria-current", "true");
-    if (scroll) selected?.element.scrollIntoView({ block: "nearest", inline: "nearest" });
+    if (scroll && selected && !selected.element.hidden) selected.element.scrollIntoView({ block: "nearest", inline: "nearest" });
   }
 
   function setEntries(entries) {
@@ -405,12 +415,17 @@ function createFeed(container, choose, renderEntry) {
       if (content) element.append(content);
       return row;
     });
+    updateVisibility();
     list.replaceChildren(...rows.map((row) => row.element));
     select(rows.find((row) => row.entry.id === selectedId));
   }
 
   return {
     setEntries,
+    setFilter(nextFilter) {
+      filter = nextFilter;
+      updateVisibility();
+    },
     selectOverlay(overlayId) {
       if (overlayId != null) select(rows.find((row) => row.entry.overlayId === overlayId), true);
     },
@@ -420,13 +435,23 @@ function createFeed(container, choose, renderEntry) {
 }
 
 /** Shared PDF navigation. Wrap the PDF.js runtime passed to the renderer once. */
-export function createPdfNavigation({ container, toggle, pdfjs, onDocument }) {
+export function createPdfNavigation({ container, pdfjs, onDocument }) {
   const controls = document.createElement("div");
   controls.className = "rpdf-nav-controls";
   const content = document.createElement("div");
   content.className = "rpdf-nav-content";
   container.classList.add("rpdf-navigation");
-  container.replaceChildren(controls, content);
+  container.hidden = false;
+  const titlebar = document.createElement("div");
+  titlebar.className = "rpdf-nav-titlebar";
+  const title = document.createElement("span");
+  title.textContent = "Pages & bookmarks";
+  const toggle = control("", () => setOpen(container.hasAttribute("data-collapsed")));
+  toggle.className = "rpdf-nav-toggle";
+  content.id = container.id + "-content";
+  toggle.setAttribute("aria-controls", content.id);
+  titlebar.append(title, toggle);
+  container.replaceChildren(titlebar, controls, content);
 
   const pagePanel = document.createElement("div");
   const bookmarkPanel = document.createElement("div");
@@ -459,19 +484,22 @@ export function createPdfNavigation({ container, toggle, pdfjs, onDocument }) {
   }
 
   function setOpen(open) {
-    container.hidden = !open;
+    container.toggleAttribute("data-collapsed", !open);
+    title.hidden = controls.hidden = content.hidden = !open;
     toggle.setAttribute("aria-expanded", String(open));
+    toggle.textContent = open ? "‹" : "›";
+    toggle.title = open ? "Minimize PDF navigation" : "Expand PDF navigation";
+    toggle.setAttribute("aria-label", toggle.title);
   }
 
-  toggle.addEventListener("click", () => setOpen(container.hidden), { signal: events.signal });
   container.addEventListener("keydown", (event) => {
-    if (event.key !== "Escape") return;
+    if (event.key !== "Escape" || container.hasAttribute("data-collapsed")) return;
     setOpen(false);
     toggle.focus();
     event.stopPropagation();
   }, { signal: events.signal });
   select("pages");
-  setOpen(false);
+  setOpen(true);
 
   function choose(target) {
     destination = target;
@@ -482,13 +510,24 @@ export function createPdfNavigation({ container, toggle, pdfjs, onDocument }) {
     if (!destination) return;
     const surface = surfaces.get(destination.page);
     if (!surface?.element.isConnected) return;
-    const scroller = closestScrollContainer(surface.element);
-    if (scroller) {
+    const scrollRoot = surface.element.ownerDocument.scrollingElement;
+    const scroller = closestScrollContainer(surface.element) || scrollRoot;
+    if (destination.bbox && scroller) {
+      const [, y0, , y1] = surface.pdfToViewportRect(destination.bbox);
+      const y = Math.min(y0, y1);
+      // Center a line or small region. Give tall figures a visible top edge.
+      const inset = Math.max(12, (scroller.clientHeight - Math.abs(y1 - y0)) / 2);
+      const scrollerTop = scroller === scrollRoot ? 0 : scroller.getBoundingClientRect().top;
+      scroller.scrollTo({
+        top: scroller.scrollTop + surface.element.getBoundingClientRect().top - scrollerTop + y - inset,
+        behavior: "instant",
+      });
+    } else if (scroller) {
       const [, offset] = Number.isFinite(destination.top)
         ? surface.pdfToViewportPoint(destination.left ?? 0, destination.top)
         : [0, 0];
       const top = scroller.scrollTop + surface.element.getBoundingClientRect().top
-        - scroller.getBoundingClientRect().top;
+        - (scroller === scrollRoot ? 0 : scroller.getBoundingClientRect().top);
       scroller.scrollTo({ top: top + offset - 12 });
     } else {
       surface.element.scrollIntoView({ block: "start" });
@@ -560,6 +599,7 @@ export function createPdfNavigation({ container, toggle, pdfjs, onDocument }) {
 
   return {
     runtime,
+    goTo: choose,
     pageRendered(page, surface) {
       surfaces.set(page, surface);
       if (destination?.page === page) jump();
@@ -574,7 +614,7 @@ export function createPdfNavigation({ container, toggle, pdfjs, onDocument }) {
       observer?.disconnect();
       surfaces.clear();
       container.replaceChildren();
-      setOpen(false);
+      container.hidden = true;
     },
   };
 }
